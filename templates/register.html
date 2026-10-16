@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="panel">
+<h1>Create account</h1>
+<form method="post">
+<label>Name <input name="name" maxlength="100" required autocomplete="name"></label>
+<label>Email <input name="email" type="email" maxlength="150" required autocomplete="email"></label>
+<label>Password <input name="password" type="password" minlength="12" required autocomplete="new-password"></label>
+<button type="submit">Register</button>
+</form>
+<p>Already registered? <a href="{{ url_for('login') }}">Log in</a></p>
+</section>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Your tasks</h1>
+<section class="panel">
+<h2>Add a task</h2>
+<form method="post" action="{{ url_for('add_task') }}">
+<label>Task <input name="title" maxlength="200" required></label>
+<label>Deadline <input name="deadline" type="date"></label>
+<label>Priority
+<select name="priority"><option>Low</option><option selected>Medium</option><option>High</option></select>
+</label>
+<button type="submit">Add task</button>
+</form>
+</section>
+<section class="panel">
+<h2>Task list</h2>
+{% if not tasks %}<p>No tasks yet. Add your first task above.</p>{% endif %}
+{% for task in tasks %}
+<article class="task">
+<div>
+<strong class="{% if task.status == 'Completed' %}done{% endif %}">{{ task.title }}</strong>
+<div class="muted">Deadline: {{ task.deadline or 'Not set' }} · Priority: {{ task.priority }} · {{ task.status }}</div>
+</div>
+<div class="actions">
+<form method="post" action="{{ url_for('toggle_task', task_id=task.id) }}"><button>{{ 'Reopen' if task.status == 'Completed' else 'Complete' }}</button></form>
+<form method="post" action="{{ url_for('delete_task', task_id=task.id) }}" onsubmit="return confirm('Delete this task?')"><button class="danger-button">Delete</button></form>
+</div>
+</article>
+{% endfor %}
+</section>
+{% endblock %}

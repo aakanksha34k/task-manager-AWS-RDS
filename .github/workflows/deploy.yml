@@ -1,0 +1,40 @@
+name: Deploy Student Task Manager
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials using GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Deploy on EC2 through Systems Manager
+        env:
+          INSTANCE_ID: ${{ vars.EC2_INSTANCE_ID }}
+        run: |
+          set -euo pipefail
+          COMMAND_ID=$(aws ssm send-command             --instance-ids "$INSTANCE_ID"             --document-name "AWS-RunShellScript"             --comment "Deploy Student Task Manager from GitHub Actions"             --parameters commands='[
+              "set -e",
+              "cd /opt/student-task-manager",
+              "sudo -u taskapp git fetch origin main",
+              "sudo -u taskapp git reset --hard origin/main",
+              "sudo -u taskapp /opt/student-task-manager/venv/bin/pip install -r requirements.txt",
+              "sudo systemctl restart student-task-manager",
+              "sudo systemctl is-active --quiet student-task-manager"
+            ]'             --query 'Command.CommandId' --output text)
+          echo "SSM command: $COMMAND_ID"
+          aws ssm wait command-executed --command-id "$COMMAND_ID" --instance-id "$INSTANCE_ID"
+          aws ssm get-command-invocation --command-id "$COMMAND_ID" --instance-id "$INSTANCE_ID"             --query 'Status' --output text
